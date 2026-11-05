@@ -1,4 +1,8 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit('Not Found');
+}
 /**
  * Script de inicialização do banco de dados SQLite
  * Cria a tabela e insere os 12 signos se o banco ainda não existir ou estiver vazio.
@@ -28,6 +32,16 @@ try {
             compatibilidade TEXT NOT NULL,
             curiosidade TEXT NOT NULL,
             simbolo TEXT NOT NULL
+        )
+    ");
+
+    // Tabela que registra cada consulta realizada
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS historico_consultas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            signo_consultado TEXT NOT NULL,
+            data_consultada TEXT NOT NULL,
+            horario_consulta TEXT NOT NULL
         )
     ");
 

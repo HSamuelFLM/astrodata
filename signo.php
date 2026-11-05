@@ -88,9 +88,8 @@ try {
                             <h1 class="h2 mb-3">Erro de conexão</h1>
                             <p class="text-muted mb-4">
                                 Não foi possível acessar o banco de dados.<br>
-                                Certifique-se de que o script de inicialização foi executado.
+                                O banco é preparado automaticamente. Atualize a página em alguns instantes ou verifique a configuração do SQLite.
                             </p>
-                            <a href="database/init.php" class="btn btn-outline-light me-2">Inicializar banco</a>
                             <a href="index.php" class="btn btn-discover">Voltar ao início</a>
                         </div>
                     </div>

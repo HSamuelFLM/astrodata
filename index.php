@@ -47,6 +47,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Salva o signo, a data e o horário em que a consulta foi realizada.
+    try {
+        $pdo = getConnection();
+        $registro = $pdo->prepare("
+            INSERT INTO historico_consultas
+                (signo_consultado, data_consultada, horario_consulta)
+            VALUES (:signo, :data, :horario)
+        ");
+        $registro->execute([
+            ':signo' => $slug,
+            ':data' => date('Y-m-d'),
+            ':horario' => date('H:i:s')
+        ]);
+    } catch (PDOException $e) {
+        error_log('Erro ao registrar consulta: ' . $e->getMessage());
+    }
+
     // Sucesso → redireciona para a página do signo
     header('Location: signo.php?signo=' . urlencode($slug));
     exit;
@@ -112,7 +129,6 @@ require_once __DIR__ . '/includes/header.php';
                                 Descobrir meu signo
                             </button>
                         </form>
-                        
                         <p class="small text-muted mt-4 mb-0">
                             Sistema desenvolvido para trabalho de curso • Dados astrológicos ocidentais
                         </p>
