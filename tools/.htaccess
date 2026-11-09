@@ -1,0 +1,8 @@
+# Bloqueia o acesso HTTP aos utilitários de linha de comando
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
