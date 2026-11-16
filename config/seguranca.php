@@ -1,26 +1,23 @@
 <?php
 /**
- * Credenciais e chave de criptografia da área restrita.
- *
- * IMPORTANTE:
- * - Este arquivo guarda segredos do projeto. Não o publique em repositórios
- *   públicos e restrinja o acesso ao servidor.
- * - Para trocar a senha ou gerar uma nova chave, use:
- *     php tools/gerar_credenciais.php "nova-senha"
- *     php tools/gerar_credenciais.php --chave
- * - Trocar a chave de criptografia torna ilegíveis os registros já gravados.
+ * Carrega segredos locais que nunca devem ser enviados ao GitHub.
+ * Gere o arquivo com: php tools/gerar_credenciais.php
  */
-
-// Hash da senha de acesso à área restrita (gerado com password_hash).
-// Senha padrão do projeto: AstroData@2026
-define('ADMIN_SENHA_HASH', '$2y$12$HAERb0MrNVZLLXjssNeIGuJHppxScnUQCWBDaxfDJdFoxE0ew.1ti');
-
-// Chave AES-256 (32 bytes em base64) usada para criptografar as consultas.
-define('APP_CHAVE_CRIPTOGRAFIA', 'R9a0QeaBIMUVuTn8TPWNjMMcsWjnCwgPHrPlYkZ3E9o=');
-
-// Tempo máximo de inatividade da sessão administrativa (em segundos).
+$localSecurityFile = __DIR__ . '/seguranca.local.php';
+if (!is_file($localSecurityFile)) {
+    throw new RuntimeException('Credenciais ausentes. Execute php tools/gerar_credenciais.php e envie o arquivo local gerado.');
+}
+$localSecurity = require $localSecurityFile;
+if (!is_array($localSecurity)) {
+    throw new RuntimeException('O arquivo config/seguranca.local.php está inválido.');
+}
+$adminHash = getenv('ADMIN_SENHA_HASH') ?: ($localSecurity['admin_password_hash'] ?? '');
+$encryptionKey = getenv('APP_CHAVE_CRIPTOGRAFIA') ?: ($localSecurity['encryption_key'] ?? '');
+if (!is_string($adminHash) || $adminHash === '' || !is_string($encryptionKey) || $encryptionKey === '') {
+    throw new RuntimeException('Hash administrativo ou chave de criptografia não configurados.');
+}
+define('ADMIN_SENHA_HASH', $adminHash);
+define('APP_CHAVE_CRIPTOGRAFIA', $encryptionKey);
 define('ADMIN_SESSAO_TIMEOUT', 900);
-
-// Tentativas de login permitidas antes do bloqueio temporário.
 define('ADMIN_MAX_TENTATIVAS', 5);
 define('ADMIN_BLOQUEIO_SEGUNDOS', 60);

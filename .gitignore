@@ -1,8 +1,11 @@
-# Banco gerado em tempo de execução (criado pelo database/init.php)
-/database/signos.sqlite
-
 # Logs e arquivos temporários
 *.log
 *.tmp
 .DS_Store
 Thumbs.db
+
+# Configurações locais e segredos (nunca versionar)
+/config/database.local.php
+/config/seguranca.local.php
+/.env
+/.env.*

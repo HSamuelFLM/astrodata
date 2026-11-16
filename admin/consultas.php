@@ -3,7 +3,7 @@
  * Área restrita – registro de consultas.
  *
  * Esta página não é linkada em nenhum lugar do site. O acesso ocorre apenas
- * pela URL direta e exige senha. Os registros são lidos do SQLite e
+ * pela URL direta e exige senha. Os registros são lidos do MySQL e
  * descriptografados somente em memória, durante a exibição.
  */
 
@@ -162,7 +162,7 @@ if ($autenticado) {
     } catch (Throwable $e) {
         error_log('AstroData: falha ao ler consultas: ' . $e->getMessage());
         $erro = 'Não foi possível carregar os registros. '
-            . 'Verifique se o banco foi inicializado em database/init.php.';
+            . 'Verifique a conexão MySQL e execute a inicialização protegida em database/init.php.';
     }
 }
 ?>
