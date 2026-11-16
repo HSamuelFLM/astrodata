@@ -1,7 +1,7 @@
 <?php
 /**
- * Conexão PDO exclusiva com MySQL/MariaDB.
- * Use variáveis de ambiente ou config/database.local.php (não versionado).
+ * Conexão PDO com SQLite para desenvolvimento local.
+ * Não use esta configuração na hospedagem InfinityFree: a branch main usa MySQL.
  */
 $localDatabaseConfig = [];
 $localDatabaseFile = __DIR__ . '/database.local.php';
@@ -9,27 +9,26 @@ if (is_file($localDatabaseFile)) {
     $loadedConfig = require $localDatabaseFile;
     if (is_array($loadedConfig)) $localDatabaseConfig = $loadedConfig;
 }
-$dbHost = getenv('DB_HOST') ?: ($localDatabaseConfig['host'] ?? '');
-$dbPort = getenv('DB_PORT') ?: ($localDatabaseConfig['port'] ?? 3306);
-$dbName = getenv('DB_NAME') ?: ($localDatabaseConfig['database'] ?? '');
-$dbUser = getenv('DB_USER') ?: ($localDatabaseConfig['username'] ?? '');
-$dbPass = getenv('DB_PASS') ?: ($localDatabaseConfig['password'] ?? '');
-$dbCharset = getenv('DB_CHARSET') ?: ($localDatabaseConfig['charset'] ?? 'utf8mb4');
-
+$databasePath = getenv('DB_PATH') ?: ($localDatabaseConfig['database_path'] ?? (__DIR__ . '/../database/signos.sqlite'));
 if (!defined('DB_SETUP_TOKEN')) {
     define('DB_SETUP_TOKEN', (string) (getenv('DB_SETUP_TOKEN') ?: ($localDatabaseConfig['setup_token'] ?? '')));
 }
+if (!defined('DB_PATH')) define('DB_PATH', $databasePath);
 
 function getConnection(): PDO
 {
-    global $dbHost, $dbPort, $dbName, $dbUser, $dbPass, $dbCharset;
-    if ($dbHost === '' || $dbName === '' || $dbUser === '') {
-        throw new RuntimeException('Configure host, database e usuário MySQL em config/database.local.php.');
+    $directory = dirname(DB_PATH);
+    if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+        throw new RuntimeException('Não foi possível criar a pasta do banco SQLite.');
     }
-    $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $dbHost, (int) $dbPort, $dbName, $dbCharset);
-    return new PDO($dsn, $dbUser, $dbPass, [
+    if (!extension_loaded('pdo_sqlite')) {
+        throw new RuntimeException('A extensão PDO_SQLite do PHP não está habilitada.');
+    }
+    $pdo = new PDO('sqlite:' . DB_PATH, null, null, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
     ]);
+    $pdo->exec('PRAGMA foreign_keys = ON');
+    $pdo->exec('PRAGMA busy_timeout = 5000');
+    return $pdo;
 }
