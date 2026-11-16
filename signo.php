@@ -89,7 +89,7 @@ try {
                             <h1 class="h2 mb-3">Erro de conexão</h1>
                             <p class="text-muted mb-4">
                                 Não foi possível acessar o banco de dados.<br>
-                                Configure a conexão MySQL e inicialize o banco antes de acessar esta página.
+                                Verifique a configuração SQLite e inicialize o banco antes de acessar esta página.
                             </p>
                             <a href="index.php" class="btn btn-discover">Voltar ao início</a>
                         </div>
