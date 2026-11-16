@@ -73,7 +73,8 @@ try {
         exit;
     }
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
+    error_log('AstroData: falha ao carregar o signo: ' . $e->getMessage());
     $pageTitle = 'Erro no sistema';
     $bodyClass = 'page-error';
     require_once __DIR__ . '/includes/header.php';
