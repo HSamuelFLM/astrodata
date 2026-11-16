@@ -1,19 +1,20 @@
 <?php
 /**
- * Inicialização do banco MySQL.
- * Em hospedagem compartilhada, abra esta página e informe o token de instalação
- * definido em config/database.local.php. Também pode ser executado via CLI.
+ * Script de inicialização do banco de dados SQLite
+ * Cria a tabela e insere os 12 signos se o banco ainda não existir ou estiver vazio.
+ * Execute uma vez: http://localhost/projeto-signos/database/init.php
  */
+
 require_once __DIR__ . '/../config/database.php';
 
 if (PHP_SAPI !== 'cli') {
     header('Content-Type: text/html; charset=utf-8');
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         echo '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Configurar AstroData</title>';
-        echo '<body><h1>Inicialização do AstroData</h1>';
-        echo '<p>Informe o token de instalação definido no arquivo privado config/database.local.php.</p>';
+        echo '<body><h1>Inicialização do AstroData (SQLite)</h1>';
+        echo '<p>Informe o token definido em config/database.local.php.</p>';
         echo '<form method="post"><label>Token de instalação <input type="password" name="token" required autocomplete="off"></label> ';
-        echo '<button type="submit">Inicializar banco MySQL</button></form></body></html>';
+        echo '<button type="submit">Inicializar banco SQLite</button></form></body></html>';
         exit;
     }
     if (!defined('DB_SETUP_TOKEN') || DB_SETUP_TOKEN === ''
@@ -26,42 +27,44 @@ if (PHP_SAPI !== 'cli') {
 
 try {
     $pdo = getConnection();
+
+    // Cria a tabela se não existir
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS signos (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            nome VARCHAR(80) NOT NULL,
-            slug VARCHAR(40) NOT NULL,
-            data_inicio VARCHAR(5) NOT NULL,
-            data_fim VARCHAR(5) NOT NULL,
-            elemento VARCHAR(40) NOT NULL,
-            modalidade VARCHAR(40) NOT NULL,
-            planeta VARCHAR(120) NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL UNIQUE,
+            slug TEXT NOT NULL UNIQUE,
+            data_inicio TEXT NOT NULL,
+            data_fim TEXT NOT NULL,
+            elemento TEXT NOT NULL,
+            modalidade TEXT NOT NULL,
+            planeta TEXT NOT NULL,
             descricao TEXT NOT NULL,
             caracteristicas TEXT NOT NULL,
             pontos_fortes TEXT NOT NULL,
             pontos_fracos TEXT NOT NULL,
             compatibilidade TEXT NOT NULL,
             curiosidade TEXT NOT NULL,
-            simbolo VARCHAR(16) NOT NULL,
-            PRIMARY KEY (id),
-            UNIQUE KEY uq_signos_nome (nome),
-            UNIQUE KEY uq_signos_slug (slug)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS consultas (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            data_consulta VARCHAR(255) NOT NULL,
-            data_consultada VARCHAR(255) NOT NULL,
-            signo_consultado VARCHAR(255) NOT NULL,
-            PRIMARY KEY (id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            simbolo TEXT NOT NULL
+        )
     ");
 
-    $count = (int) $pdo->query("SELECT COUNT(*) FROM signos")->fetchColumn();
+    // Tabela de auditoria das consultas (dados sempre criptografados)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS consultas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data_consulta TEXT NOT NULL,
+            data_consultada TEXT NOT NULL,
+            signo_consultado TEXT NOT NULL
+        )
+    ");
+
+    // Verifica se já existem dados
+    $count = $pdo->query("SELECT COUNT(*) FROM signos")->fetchColumn();
+
     if ($count > 0) {
         echo "<h1>Banco já inicializado</h1>";
-        echo "<p>Existem {$count} signos cadastrados. Nenhum dado foi alterado.</p>";
+        echo "<p>Existem {$count} signos cadastrados.</p>";
         echo '<p><a href="../index.php">Ir para a página inicial</a></p>';
         exit;
     }
@@ -272,16 +275,18 @@ try {
             :compatibilidade, :curiosidade, :simbolo
         )
     ");
+
     foreach ($signos as $signo) {
         $stmt->execute($signo);
     }
 
-    echo "<h1>Banco MySQL inicializado com sucesso!</h1>";
-    echo "<p>12 signos cadastrados. A tabela de consultas também está pronta.</p>";
+    echo "<h1>Banco SQLite inicializado com sucesso!</h1>";
+    echo "<p>12 signos cadastrados.</p>";
     echo '<p><a href="../index.php">Ir para a página inicial</a></p>';
+
 } catch (Throwable $e) {
-    error_log('AstroData: falha na inicialização do MySQL: ' . $e->getMessage());
+    error_log('AstroData SQLite: falha na inicialização: ' . $e->getMessage());
     http_response_code(500);
-    echo "<h1>Não foi possível inicializar o banco</h1>";
-    echo "<p>Confira os dados de conexão MySQL e os privilégios do usuário do banco.</p>";
+    echo '<h1>Não foi possível inicializar o banco SQLite</h1>';
+    echo '<p>Verifique se a extensão PDO_SQLite está habilitada e se a pasta database permite escrita.</p>';
 }
