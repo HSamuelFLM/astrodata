@@ -1,83 +1,96 @@
-# AstroData — Descubra seu Signo
+# AstroData — ambiente local com SQLite
 
-Site em PHP puro que identifica o signo zodiacal a partir da data de nascimento e exibe informações detalhadas. Esta versão utiliza **MySQL/MariaDB via PDO**, preparada para hospedagem compartilhada como o InfinityFree.
+Versão de desenvolvimento local do AstroData. O site identifica o signo zodiacal a partir da data de nascimento e apresenta informações detalhadas. Esta branch utiliza **SQLite via PDO**, sem exigir um servidor MySQL.
+
+> **Importante:** esta branch é destinada ao desenvolvimento local. Para publicar no InfinityFree, use a branch `main`, que utiliza MySQL/MariaDB. Não misture os arquivos de conexão das duas branches.
 
 ## Tecnologias
 
 - PHP 8+
-- MySQL 8 / MariaDB
-- PDO com prepared statements
+- SQLite por PDO (`pdo_sqlite`)
 - HTML5, CSS3, JavaScript e Bootstrap 5
 - OpenSSL AES-256-GCM para criptografar o histórico administrativo
 
-## Estrutura
+## Estrutura principal
 
-- `index.php`: formulário e processamento da data.
-- `signo.php`: exibe as informações do signo.
-- `admin/consultas.php`: painel privado de histórico.
-- `config/database.php`: conexão PDO MySQL.
+- `index.php`: formulário de data de nascimento.
+- `signo.php`: informações do signo identificado.
+- `admin/consultas.php`: painel privado do histórico.
+- `config/database.php`: conexão PDO SQLite.
 - `config/seguranca.php`: carrega os segredos locais.
 - `database/init.php`: cria as tabelas e cadastra os 12 signos.
-- `includes/`: regras de negócio, registro e criptografia.
-- `tools/gerar_credenciais.php`: gera a senha administrativa e a chave AES localmente.
+- `tools/gerar_credenciais.php`: gera senha administrativa e chave AES localmente.
+- `database/signos.sqlite`: banco criado automaticamente (não versionado).
 
-## Preparação local
+## Requisitos
 
-1. Instale PHP com as extensões `pdo_mysql` e `openssl`.
-2. Crie um banco MySQL e um usuário com permissões para criar e alterar tabelas.
+- PHP 8 ou superior.
+- Extensões PHP `pdo_sqlite` e `openssl`.
+- Apache/XAMPP ou servidor PHP embutido para desenvolvimento.
+
+## Preparação inicial
+
+1. Baixe esta branch:
+   `local/sqlite-development`.
+2. Confira se as extensões estão habilitadas:
+   `php -m`
+   e confirme que aparecem `pdo_sqlite` e `openssl`.
 3. Copie `config/database.local.example.php` para `config/database.local.php`.
-4. Preencha host, porta, nome do banco, usuário e senha fornecidos pelo servidor MySQL.
-5. Substitua `setup_token` por um valor aleatório longo (64 caracteres hexadecimais).
-6. Na raiz do projeto, execute:
+4. No arquivo local, mantenha o caminho padrão ou informe outro caminho gravável em `database_path`.
+5. Gere um token aleatório para a inicialização web:
+   `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`
+   e coloque o resultado em `setup_token` no arquivo local.
+6. Gere os segredos administrativos:
+   `php tools/gerar_credenciais.php`
+   O comando cria `config/seguranca.local.php` e mostra uma senha administrativa aleatória uma única vez. Guarde a senha e faça backup seguro desse arquivo: ele contém a chave para descriptografar os registros.
+7. Inicialize o banco pelo terminal:
+   `php database/init.php`
+   Também é possível abrir `/database/init.php` no navegador e informar o token configurado.
+8. Inicie o servidor e acesse a página inicial.
 
-   ```bash
-   php tools/gerar_credenciais.php
-   ```
+## Executar com PHP embutido
 
-   O comando cria `config/seguranca.local.php` e mostra uma senha administrativa aleatória uma única vez. Guarde a senha e faça backup seguro do arquivo local: ele contém a chave necessária para descriptografar os registros. **Não execute novamente com `--force` depois de começar a registrar consultas**, pois isso gera outra chave e torna os registros antigos ilegíveis.
+Na raiz do projeto, execute:
 
-7. Inicialize o banco:
-   - Localmente: `php database/init.php`.
-   - Em hospedagem sem terminal: abra `/database/init.php`, informe o token configurado e execute a instalação.
-8. Acesse `index.php` e teste datas de diferentes signos. A área administrativa fica em `/admin/consultas.php`.
+```bash
+php -S localhost:8000
+```
 
-A inicialização é idempotente: se os 12 signos já estiverem cadastrados, ela não apaga nem sobrescreve registros.
+Abra http://localhost:8000.
 
-## Configuração no InfinityFree
+Com XAMPP, coloque a pasta do projeto em `htdocs`, inicie o Apache e acesse a URL local correspondente.
 
-1. Crie uma conta e um site no InfinityFree.
-2. No painel, crie um banco MySQL e anote o host, nome, usuário e senha apresentados.
-3. Envie os arquivos do projeto para a pasta pública do site.
-4. Crie `config/database.local.php` no servidor copiando o modelo e preenchendo os dados do banco. Não envie esse arquivo ao GitHub.
-5. Gere `config/seguranca.local.php` localmente com `php tools/gerar_credenciais.php` e envie o arquivo por FTP/gerenciador de arquivos. Guarde uma cópia segura fora do servidor.
-6. Abra `https://SEU-SITE/database/init.php`, informe o token de instalação e confirme que os 12 signos foram cadastrados.
-7. Teste a página inicial, a navegação para cada signo e o registro de uma consulta.
-8. Teste `/admin/consultas.php` com a senha gerada.
+## Banco SQLite
 
-O servidor precisa disponibilizar `pdo_mysql` e OpenSSL. Se a conexão falhar, confira o host MySQL no painel da hospedagem — ele pode não ser `localhost`.
+- O banco é criado automaticamente em `database/signos.sqlite`.
+- A pasta `database/` precisa ter permissão de escrita para o processo PHP.
+- O arquivo do banco é ignorado pelo Git e não deve ser enviado ao repositório.
+- O arquivo `database/.htaccess` bloqueia acesso HTTP direto aos arquivos de banco.
+- A inicialização preserva os dados se já houver signos cadastrados; não apaga nem sobrescreve registros existentes.
+- Para um banco novo, a inicialização cadastra os 12 signos e cria a tabela de consultas.
 
-Após inicializar o banco, remova o acesso público ao instalador: apague `database/init.php` do servidor ou renomeie-o e mantenha-o fora da pasta pública. O token é uma proteção adicional, não motivo para deixar o instalador exposto permanentemente.
+## Área administrativa e criptografia
+
+Acesse `/admin/consultas.php` e use a senha gerada por `tools/gerar_credenciais.php`.
+
+O histórico é criptografado com AES-256-GCM. Guarde uma cópia segura de `config/seguranca.local.php`. **Não gere uma nova chave com `--force` depois de começar a registrar consultas**, pois isso torna os registros antigos ilegíveis.
 
 ## Segurança
 
-- Credenciais MySQL e segredos administrativos ficam em arquivos locais ignorados pelo Git.
-- A pasta `config/` possui regra de bloqueio HTTP.
-- O instalador exige token secreto em requisições web.
-- O histórico é criptografado com AES-256-GCM antes de ser gravado.
-- O painel administrativo usa hash de senha, sessão com expiração, proteção CSRF e bloqueio temporário de tentativas.
-- Não há senha administrativa padrão no código.
-
-**Importante:** versões anteriores do repositório continham um hash administrativo e uma chave de criptografia embutidos. Considere-os comprometidos e use os novos segredos gerados por este projeto. Para uma instalação nova, gere os segredos antes do primeiro registro. Se já houver dados criptografados com a chave antiga, faça backup e migre-os antes de substituí-la.
+- `config/database.local.php` e `config/seguranca.local.php` são ignorados pelo Git.
+- O arquivo SQLite é ignorado pelo Git e bloqueado contra acesso HTTP direto pelo `.htaccess` em `database/`.
+- A inicialização pelo navegador exige token secreto; prefira executar via CLI quando possível.
+- Depois de inicializar pelo navegador, remova `database/init.php` do diretório público ou restrinja seu acesso.
+- Não há senha administrativa padrão embutida no código.
 
 ## Testes recomendados
 
-- Data válida de cada um dos 12 signos.
-- Data inválida, futura e anterior a 1900.
-- Registro de consulta no banco e exibição no painel administrativo.
-- Paginação do histórico.
-- Login incorreto, bloqueio temporário, logout e expiração da sessão.
-- Acesso HTTP direto a arquivos dentro de `config/` (deve ser negado).
+- Testar datas correspondentes aos 12 signos.
+- Testar data inválida e data futura.
+- Confirmar registro de consulta no SQLite.
+- Confirmar login, logout, expiração de sessão e bloqueio temporário.
+- Confirmar que `database/signos.sqlite` não pode ser baixado pelo navegador.
 
-## Execução local
+## Hospedagem
 
-O projeto pode ser executado com Apache + PHP (por exemplo, XAMPP) e um servidor MySQL/MariaDB. SQLite não é mais utilizado.
+Esta branch é exclusivamente para desenvolvimento local com SQLite. Para o site InfinityFree, faça checkout de `main`, que contém a configuração MySQL preparada para a hospedagem.
