@@ -4,6 +4,11 @@
 .DS_Store
 Thumbs.db
 
+# Banco SQLite local (não versionar dados locais)
+/database/*.sqlite
+/database/*.sqlite-*
+/database/*.db
+
 # Configurações locais e segredos (nunca versionar)
 /config/database.local.php
 /config/seguranca.local.php
